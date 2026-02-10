@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Market Merge AI</title>
+</head>
+<body>
+
+<h1>Market Merge AI</h1>
+
+<input id="link" placeholder="Enter product link"><br><br>
+<input id="price" type="number" placeholder="Enter product price (₹)"><br><br>
+
+<button onclick="compare()">Compare</button>
+
+<h3 id="best"></h3>
+<p id="aiText"></p>
+
+<table border="1" id="table" style="display:none;">
+    <tr>
+        <th>Platform</th>
+        <th>Price</th>
+        <th>Rating</th>
+        <th>Delivery</th>
+        <th>Return</th>
+    </tr>
+    <tbody id="body"></tbody>
+</table>
+
+<h3>Price History</h3>
+<canvas id="chart" width="600" height="300"></canvas>
+
+<script>
+function compare() {
+    fetch("http://127.0.0.1:5000/compare", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            link: link.value,
+            price: price.value
+        })
+    })
+    .then(r => r.json())
+    .then(d => {
+        document.getElementById("best").innerText =
+            "Best Platform: " + d.best_platform.platform + " (₹" + d.best_platform.price + ")";
+
+        document.getElementById("aiText").innerText = d.ai_explanation;
+
+        const body = document.getElementById("body");
+        body.innerHTML = "";
+        document.getElementById("table").style.display = "table";
+
+        d.comparison.forEach(p => {
+            body.innerHTML += `
+                <tr>
+                    <td>${p.platform}</td>
+                    <td>₹${p.price}</td>
+                    <td>${p.rating}</td>
+                    <td>${p.delivery}</td>
+                    <td>${p.return_policy}</td>
+                </tr>`;
+        });
+    });
+
+    fetch("http://127.0.0.1:5000/price-history")
+    .then(r => r.json())
+    .then(d => {
+        const ctx = chart.getContext("2d");
+        ctx.clearRect(0,0,600,300);
+        const max = Math.max(...d.prices);
+        d.prices.forEach((p,i)=>{
+            ctx.fillRect(50+i*100, 250-(p/max)*200, 40, (p/max)*200);
+            ctx.fillText(d.days[i], 50+i*100, 270);
+            ctx.fillText("₹"+p, 50+i*100, 240-(p/max)*200);
+        });
+    });
+}
+</script>
+
+</body>
+</html>
